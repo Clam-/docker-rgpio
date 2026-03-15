@@ -1,0 +1,23 @@
+services:
+  rgpiod:
+    image: ${IMAGE_NAME:-docker-pigpio:latest}
+    build:
+      context: .
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-badaix/raspios-lite:trixie}
+    environment:
+      RGPIOD_PORT: ${RGPIOD_PORT:-8889}
+      RGPIOD_LOCAL_ONLY: ${RGPIOD_LOCAL_ONLY:-0}
+      RGPIOD_ALLOWED_IPS: ${RGPIOD_ALLOWED_IPS:-}
+      RGPIOD_ACCESS_CONTROL: ${RGPIOD_ACCESS_CONTROL:-0}
+      RGPIOD_CONFIG_DIR: ${RGPIOD_CONFIG_DIR:-}
+      RGPIOD_WORK_DIR: ${RGPIOD_WORK_DIR:-}
+    ports:
+      - "${RGPIOD_PORT:-8889}:${RGPIOD_PORT:-8889}"
+    devices:
+      - /dev/gpiochip0:/dev/gpiochip0
+    restart: unless-stopped
+    # Map additional gpiochips here if your board exposes them.
+    # devices:
+    #   - /dev/gpiochip0:/dev/gpiochip0
+    #   - /dev/gpiochip4:/dev/gpiochip4
