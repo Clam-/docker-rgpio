@@ -4,7 +4,7 @@
     "image": "local/rgpiod:latest",
     "source": {
       "type": "git",
-      "url": "https://github.com/<owner>/docker-pigpio.git",
+      "url": "https://github.com/<owner>/<repo>.git",
       "dockerfile": "Dockerfile"
     },
     "env": {

@@ -1,6 +1,6 @@
 services:
   rgpiod:
-    image: ${IMAGE_NAME:-docker-pigpio:latest}
+    image: ${IMAGE_NAME:-docker-rgpio:latest}
     build:
       context: .
       args:

@@ -1,4 +1,4 @@
-# docker-pigpio
+# docker-rgpio
 
 This repo builds a Docker image that installs Raspberry Pi OS packaged `rgpiod` and `rgpio-tools` with plain `apt`, then exposes the `rgpiod` socket interface for remote GPIO access.
 
@@ -25,7 +25,7 @@ Build directly from the repo URL:
 
 ```sh
 docker buildx build \
-  -t docker-pigpio:latest \
+  -t docker-rgpio:latest \
   --build-arg BASE_IMAGE=badaix/raspios-lite:trixie \
   https://github.com/<owner>/<repo>.git#main
 ```
@@ -45,7 +45,7 @@ Use a `containers` entry like this on the Raspberry Pi client:
     "image": "local/rgpiod:latest",
     "source": {
       "type": "git",
-      "url": "https://github.com/<owner>/docker-pigpio.git",
+      "url": "https://github.com/<owner>/<repo>.git",
       "dockerfile": "Dockerfile"
     },
     "env": {
@@ -80,7 +80,7 @@ docker run -d \
   --restart unless-stopped \
   --device /dev/gpiochip0:/dev/gpiochip0 \
   -p 8889:8889 \
-  docker-pigpio:latest
+  docker-rgpio:latest
 ```
 
 If your board exposes more than one gpiochip, pass each needed device:
@@ -92,7 +92,7 @@ docker run -d \
   --device /dev/gpiochip0:/dev/gpiochip0 \
   --device /dev/gpiochip4:/dev/gpiochip4 \
   -p 8889:8889 \
-  docker-pigpio:latest
+  docker-rgpio:latest
 ```
 
 ## Runtime configuration
@@ -113,7 +113,7 @@ Extra `rgpiod` flags can be passed as container arguments:
 docker run --rm \
   --device /dev/gpiochip0:/dev/gpiochip0 \
   -p 8889:8889 \
-  docker-pigpio:latest \
+  docker-rgpio:latest \
   -n 192.168.1.10
 ```
 
