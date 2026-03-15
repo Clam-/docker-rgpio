@@ -1,11 +1,20 @@
 # syntax=docker/dockerfile:1.7
 
-ARG BASE_IMAGE=badaix/raspios-lite:trixie
+ARG BASE_IMAGE=debian:trixie-slim
 FROM ${BASE_IMAGE}
 
 SHELL ["/bin/sh", "-exc"]
 
-RUN apt-get update \
+COPY raspberrypi-archive.asc /usr/share/keyrings/raspberrypi-archive.asc
+
+RUN printf '%s\n' \
+      'Types: deb' \
+      'URIs: http://archive.raspberrypi.com/debian/' \
+      'Suites: trixie' \
+      'Components: main' \
+      'Signed-By: /usr/share/keyrings/raspberrypi-archive.asc' \
+      > /etc/apt/sources.list.d/raspi.sources \
+ && apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       procps \
       rgpiod \

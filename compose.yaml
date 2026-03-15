@@ -4,7 +4,7 @@ services:
     build:
       context: .
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-badaix/raspios-lite:trixie}
+        BASE_IMAGE: ${BASE_IMAGE:-debian:trixie-slim}
     environment:
       RGPIOD_PORT: ${RGPIOD_PORT:-8889}
       RGPIOD_LOCAL_ONLY: ${RGPIOD_LOCAL_ONLY:-0}

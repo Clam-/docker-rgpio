@@ -1,23 +1,75 @@
 # docker-rgpio
 
-This repo builds a Docker image that installs Raspberry Pi OS packaged `rgpiod` and `rgpio-tools` with plain `apt`, then exposes the `rgpiod` socket interface for remote GPIO access.
+This repo builds a Docker image that installs Raspberry Pi packaged `rgpiod` and `rgpio-tools` on top of a small Debian `trixie-slim` base, then exposes the `rgpiod` socket interface for remote GPIO access.
 
 It is designed to be buildable directly from a Git URL, for example with `docker buildx build https://github.com/...`.
 
 It is also structured to work with the remote-client deployment model described in `ha-docker-pxe-deploy`: build the image from this Git repository on the Raspberry Pi client, then run it there with explicit `ports`, `devices`, and `env` settings instead of relying on Compose.
 
+## Easy image build and publish
+
+The repo now includes a small `buildx` wrapper plus `make` targets so the normal workflow is a short command instead of a long Docker invocation.
+
+Default target platform:
+
+- `linux/arm64`
+
+Prerequisites:
+
+- Docker CLI installed
+- `buildx` available either as `docker buildx` or standalone `docker-buildx`
+- A working Docker daemon, or a Docker context that points at a reachable remote daemon
+- For cross-building from a non-ARM host, `buildx` emulation support available to Docker
+
+Build an arm64 image into your local Docker image store:
+
+```sh
+make image-build
+```
+
+Publish an arm64 image to a registry:
+
+```sh
+make image-publish IMAGE_REPO=ghcr.io/<owner>/docker-rgpio IMAGE_TAG=latest
+```
+
+Build and publish a specific version tag:
+
+```sh
+make image-publish IMAGE_REPO=ghcr.io/<owner>/docker-rgpio IMAGE_TAG=2026.03.15
+```
+
+The helper script automatically creates and bootstraps a dedicated `buildx` builder named `docker-rgpio-arm64` if it does not already exist.
+
+Supported variables:
+
+- `IMAGE_REPO`: image repository/name, default `docker-rgpio`
+- `IMAGE_TAG`: image tag, default `latest`
+- `IMAGE_PLATFORM`: target platform, default `linux/arm64`
+- `BASE_IMAGE`: base image build arg, default `debian:trixie-slim`
+- `BUILDER_NAME`: override the `buildx` builder name if needed
+- `EXTRA_ARGS`: append raw extra flags to `docker buildx build`
+
+If you prefer not to use `make`, the underlying helper is:
+
+```sh
+sh scripts/docker-image.sh build
+sh scripts/docker-image.sh publish
+```
+
 ## Assumptions
 
 - The supported target is a Raspberry Pi OS host running Docker on Raspberry Pi hardware.
-- The image installs `rgpiod` and `rgpio-tools` from the default Raspberry Pi OS apt configuration already present in the base image.
-- The default build uses a Raspberry Pi OS Lite `trixie` base image.
+- The image installs `rgpiod` and `rgpio-tools` from the Raspberry Pi archive on top of a Debian `trixie-slim` base.
+- The default build uses `debian:trixie-slim`.
 - This still does not make GPIO portable across arbitrary hosts. The container needs Linux gpiochip device nodes from the host, typically `/dev/gpiochip0` and sometimes additional gpiochips depending on the board.
 
 ## Package availability
 
 - Raspberry Pi's current `trixie` archive includes `rgpiod`, `rgpio-tools`, `librgpio1`, and related `lg-gpio` packages.
 - Debian proper did not contain `rgpiod`, `rgpio-tools`, or the `librgpio` packages in the `bookworm`, `trixie`, or `sid` `arm64` main package indexes I checked on March 15, 2026.
-- Because of that, this repo now stays Raspberry Pi OS-specific instead of layering Raspberry Pi packages onto Debian.
+- Because of that, this repo uses Debian for the runtime base but still installs the GPIO packages from the Raspberry Pi archive.
+- The Raspberry Pi archive signing key is vendored in `raspberrypi-archive.asc` so the build does not depend on a large Raspberry Pi OS base image.
 
 ## Build from a GitHub URL
 
@@ -26,11 +78,11 @@ Build directly from the repo URL:
 ```sh
 docker buildx build \
   -t docker-rgpio:latest \
-  --build-arg BASE_IMAGE=badaix/raspios-lite:trixie \
+  --build-arg BASE_IMAGE=debian:trixie-slim \
   https://github.com/<owner>/<repo>.git#main
 ```
 
-No extra apt repositories are added in the Dockerfile. The base image is expected to already be Raspberry Pi OS with its normal package sources configured.
+The Dockerfile adds the Raspberry Pi apt source on top of Debian and installs only the needed packages.
 
 ## Home Assistant PXE Docker Fleet
 
@@ -128,7 +180,7 @@ docker compose up -d --build
 Override build args or runtime settings through environment variables:
 
 ```sh
-BASE_IMAGE=badaix/raspios-lite:trixie RGPIOD_ALLOWED_IPS=192.168.1.10 docker compose up -d --build
+BASE_IMAGE=debian:trixie-slim RGPIOD_ALLOWED_IPS=192.168.1.10 docker compose up -d --build
 ```
 
 ## Security note
@@ -143,7 +195,7 @@ By default `rgpiod` allows remote TCP clients. If the service should only be rea
 
 - `ha-docker-pxe-deploy` agent guidance for Git-backed remote builds: <https://github.com/Clam-/ha-docker-pxe-deploy/blob/main/README.md>
 - Raspberry Pi `trixie` package index showing `rgpiod` and `rgpio-tools`: <https://archive.raspberrypi.org/debian/dists/trixie/main/binary-arm64/Packages.gz>
-- Raspberry Pi OS Lite OCI image tags used as the base here: <https://hub.docker.com/r/badaix/raspios-lite>
+- Debian `trixie-slim` base image tags used by default here: <https://hub.docker.com/_/debian>
 - Upstream `rgpiod` documentation and launch options: <https://lg.raspberrybasic.org/rgpiod.html>
 - Upstream `rgs` client documentation: <https://lg.raspberrybasic.org/rgs.html>
 - Debian package indexes checked for absence of `rgpiod` in main: <https://deb.debian.org/debian/dists/trixie/main/binary-arm64/Packages.gz> and <https://deb.debian.org/debian/dists/sid/main/binary-arm64/Packages.gz>
